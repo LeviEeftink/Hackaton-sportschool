@@ -1,0 +1,47 @@
+@startuml
+left to right direction
+skinparam backgroundColor white
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 16
+skinparam usecaseBackgroundColor #F2F6FA
+actor Bezoeker as B
+actor Lid as L
+actor Medewerker as M
+actor Beheerder as A
+A --|> M
+rectangle "Sportschool De Kast" {
+  usecase "UC-01\nRegistreren" as U1
+  usecase "UC-02\nInloggen en uitloggen" as U2
+  usecase "UC-03\nEigen gegevens bekijken" as U3
+  usecase "UC-04\nInchecken" as U4
+  usecase "Abonnement controleren" as R
+  usecase "Toegangspoging opslaan" as G
+  usecase "UC-05\nCursus boeken" as U5
+  usecase "Cursusrecht controleren" as CR
+  usecase "UC-06\nCoachafspraak plannen" as U6
+  usecase "Beschikbaarheid controleren" as BR
+  usecase "UC-07\nEigen boeking annuleren" as U7
+  usecase "UC-08\nLeden en abonnementen beheren" as U8
+  usecase "UC-09\nCursussen en coaches beheren" as U9
+  usecase "UC-10\nBoekingen en toegang raadplegen" as U10
+  usecase "UC-11\nRollen beheren" as U11
+}
+B -- U1
+B -- U2
+L -- U2
+L -- U3
+L -- U4
+L -- U5
+L -- U6
+L -- U7
+M -- U2
+M -- U8
+M -- U9
+M -- U10
+A -- U11
+U4 ..> R : <<include>>
+U4 ..> G : <<include>>
+U5 ..> CR : <<include>>
+U6 ..> BR : <<include>>
+@enduml

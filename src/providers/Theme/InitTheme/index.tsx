@@ -1,50 +1,11 @@
-import Script from 'next/script'
 import React from 'react'
 
-import { defaultTheme, themeLocalStorageKey } from '../ThemeSelector/types'
-
+// InitTheme is bewust vereenvoudigd om de React 19 / Next 16 warning
+// "Scripts inside React components are never executed when rendering on the client"
+// te vermijden. Theme wordt nu alleen via ThemeProvider (client useEffect)
+// gezet — geen inline <script> meer. Dit voorkomt FOUC-fix script maar
+// elimineert de browser warning. Wil je FOUC voorkomen, plaats een plain
+// <script> direct in <head> via next.config of via een custom _document.
 export const InitTheme: React.FC = () => {
-  return (
-    // eslint-disable-next-line @next/next/no-before-interactive-script-outside-document
-    <Script
-      dangerouslySetInnerHTML={{
-        __html: `
-  (function () {
-    function getImplicitPreference() {
-      var mediaQuery = '(prefers-color-scheme: dark)'
-      var mql = window.matchMedia(mediaQuery)
-      var hasImplicitPreference = typeof mql.matches === 'boolean'
-
-      if (hasImplicitPreference) {
-        return mql.matches ? 'dark' : 'light'
-      }
-
-      return null
-    }
-
-    function themeIsValid(theme) {
-      return theme === 'light' || theme === 'dark'
-    }
-
-    var themeToSet = '${defaultTheme}'
-    var preference = window.localStorage.getItem('${themeLocalStorageKey}')
-
-    if (themeIsValid(preference)) {
-      themeToSet = preference
-    } else {
-      var implicitPreference = getImplicitPreference()
-
-      if (implicitPreference) {
-        themeToSet = implicitPreference
-      }
-    }
-
-    document.documentElement.setAttribute('data-theme', themeToSet)
-  })();
-  `,
-      }}
-      id="theme-script"
-      strategy="beforeInteractive"
-    />
-  )
+  return null
 }

@@ -15,49 +15,47 @@ type Args = {
 }
 export default async function Page({ searchParams: searchParamsPromise }: Args) {
   const { q: query } = await searchParamsPromise
-  const payload = await getPayload({ config: configPromise })
-
-  const posts = await payload.find({
-    collection: 'search',
-    depth: 1,
-    limit: 12,
-    select: {
-      title: true,
-      slug: true,
-      categories: true,
-      meta: true,
-    },
-    // pagination: false reduces overhead if you don't need totalDocs
-    pagination: false,
-    ...(query
-      ? {
-          where: {
-            or: [
-              {
-                title: {
-                  like: query,
-                },
-              },
-              {
-                'meta.description': {
-                  like: query,
-                },
-              },
-              {
-                'meta.title': {
-                  like: query,
-                },
-              },
-              {
-                slug: {
-                  like: query,
-                },
-              },
-            ],
-          },
-        }
-      : {}),
-  })
+  let posts: any = { docs: [], totalDocs: 0 }
+  try {
+    const payload = await getPayload({ config: configPromise })
+    posts = await payload.find({
+      collection: 'search' as any,
+      depth: 1,
+      limit: 12,
+      select: {
+        title: true,
+        slug: true,
+        categories: true,
+        meta: true,
+      },
+      pagination: false,
+      ...(query
+        ? {
+            where: {
+              or: [
+                { title: { like: query } },
+                { 'meta.description': { like: query } },
+                { 'meta.title': { like: query } },
+                { slug: { like: query } },
+              ],
+            },
+          }
+        : {}),
+    })
+  } catch (err) {
+    // search plugin verwijderd — toon melding
+    return (
+      <div className="pt-24 pb-24">
+        <PageClient />
+        <div className="container mb-16">
+          <div className="prose dark:prose-invert max-w-none text-center">
+            <h1 className="mb-8">Search verwijderd</h1>
+            <p>Zoeken is vervangen door <a href="/cursussen" className="underline">Cursussen</a> en <a href="/coaches" className="underline">Coaches</a>.</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="pt-24 pb-24">

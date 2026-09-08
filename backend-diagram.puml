@@ -1,0 +1,314 @@
+@startuml Sportschool_De_Kast_Backend
+
+title Sportschool De Kast — Backend Architecture (Payload CMS)
+
+skinparam backgroundColor #FEFEFE
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+skinparam nodesep 60
+skinparam ranksep 80
+
+skinparam class {
+  BackgroundColor #F8F9FA
+  BorderColor #495057
+  HeaderBackgroundColor #343A40
+  FontColor #212529
+  AttributeFontColor #495057
+  ArrowColor #6C757D
+}
+
+' ============================================
+' AUTH COLLECTION
+' ============================================
+class users <<(E,#FF6B6B) Auth>> {
+  +name : text *
+  +role : select
+  ----
+  lid → leden
+  medewerker → medewerkers
+  coach → coaches
+  ----
+  <<beforeChange>>
+  Force role to 'lid' for
+  non-privileged users
+}
+
+' ============================================
+' MEDIA COLLECTION
+' ============================================
+class media <<(M,#4ECDC4) Upload>> {
+  +alt : text
+  +caption : richText (Lexical)
+  ----
+  sizes: thumbnail | square |
+    small | medium | large |
+    xlarge | og
+  folders: enabled
+  focalPoint: true
+}
+
+' ============================================
+' DOMAIN COLLECTIONS
+' ============================================
+class leden <<(D,#45B7D1) Lid>> {
+  +naam : text *
+  +email : email * [unique]
+  +status : select *
+  +abonnement → abonnementen
+  ----
+  <<join>> cursusInschrijvingen
+  <<join>> coachAfspraken
+  <<join>> toegangspogingen
+  ----
+  <<Access>>
+  read/update: self + medewerker
+  create/delete: medewerker
+}
+
+class abonnementen <<(D,#96CEB4) Abonnement>> {
+  +type : select *
+  ----
+  EenKeerPerWeek
+  TweeKeerPerWeek
+  Onbeperkt
+  CursusAddendum
+  ----
+  +status : select *
+  +startDatum : date *
+  +eindDatum : date [readOnly]
+  +bezoekenDezeWeek : number *
+  +heeftCursusAddendum : checkbox
+  ----
+  <<beforeChange>>
+  Auto-set eindDatum on cancel
+}
+
+class coaches <<(D,#FFEAA7) Coach>> {
+  +naam : text *
+  +email : email * [unique]
+  +specialisatie : text *
+  +status : select *
+  ----
+  <<join>> afspraken
+  ----
+  <<Access>>
+  CRUD: medewerker only
+  read: anyone
+}
+
+class medewerkers <<(D,#DDA0DD) Medewerker>> {
+  +naam : text *
+  +email : email * [unique]
+  +rol : text *
+  +status : select *
+  ----
+  <<Access>>
+  CRUD: medewerker only
+}
+
+class cursussen <<(D,#98D8C8) Cursus>> {
+  +naam : text *
+  +status : select *
+  +beschikbareMomenten : array
+  ----
+  [{ moment: datetime }]
+  ----
+  <<join>> inschrijvingen
+  ----
+  <<Access>>
+  create/update/delete: medewerker
+  read: anyone
+}
+
+class cursusinschrijvingen <<(D,#F7DC6F) Inschrijving>> {
+  +lid → leden *
+  +cursus → cursussen *
+  +moment : datetime *
+  +inschrijfDatum : datetime *
+  +status : select *
+  ----
+  <<beforeChange (create)>>
+  1. Ownership: lid = self only
+  2. Addendum check:
+     abonnement.heeftCursusAddendum
+  3. Duplicate check:
+     no Bevestigd for same
+     lid+cursus+moment
+}
+
+class coachafspraken <<(D,#BB8FCE) Afspraak>> {
+  +lid → leden *
+  +coach → coaches *
+  +datumTijd : datetime *
+  +status : select *
+  ----
+  <<beforeChange (create)>>
+  1. Ownership: lid = self only
+  2. Conflict check:
+     no Bevestigd for same
+     coach+datumTijd
+}
+
+class toegangspogingen <<(D,#F1948A) Check-in>> {
+  +lid → leden *
+  +datumTijd : datetime *
+  +resultaat : select *
+  ----
+  Toegestaan | Geweigerd
+  ----
+  +reden : text *
+  ----
+  <<beforeValidate (create)>>
+  Auto door-access logic:
+  - No sub → Geweigerd
+  - Sub not Actief → Geweigerd
+  - Onbeperkt → Toegestaan
+  - 1x/2x pw → check weeklimiet
+  - Increments bezoekenDezeWeek
+}
+
+' ============================================
+' PLUGIN COLLECTIONS
+' ============================================
+class forms <<(P,#AED6F1) Plugin>> {
+  +title : text *
+  +fields : array of blocks
+  ----
+  checkbox | country | email |
+  message | number | select |
+  state | text | textarea
+  ----
+  +submitButtonLabel
+  +confirmationType
+  +confirmationMessage
+  +redirect.url
+  +emails[]: array
+}
+
+class form_submissions <<(P,#AED6F1) Plugin>> {
+  +form → forms *
+  +submissionData : array
+  ----
+  [{ field, value }]
+}
+
+' ============================================
+' INTERNAL COLLECTIONS
+' ============================================
+class payload_kv <<(I,#D5D8DC) Internal>> {
+  +key : text
+  +data : json
+}
+
+class payload_folders <<(I,#D5D8DC) Internal>> {
+  +folder → self
+  +documentsAndFolders
+  +folderType
+}
+
+class payload_locked_documents <<(I,#D5D8DC) Internal>>
+class payload_preferences <<(I,#D5D8DC) Internal>>
+class payload_migrations <<(I,#D5D8DC) Internal>>
+
+' ============================================
+' RELATIONSHIPS
+' ============================================
+users --> leden : lid
+users --> medewerkers : medewerker
+users --> coaches : coach
+
+leden --> abonnementen : abonnement (1-op-1)
+
+cursusinschrijvingen --> leden : lid
+cursusinschrijvingen --> cursussen : cursus
+
+coachafspraken --> leden : lid
+coachafspraken --> coaches : coach
+
+toegangspogingen --> leden : lid
+
+form_submissions --> forms : form
+
+media --> payload_folders : folder
+
+' ============================================
+' ACCESS CONTROL LEGEND
+' ============================================
+legend bottom left
+  |= Access Rule |= Symbol |= Description |
+  | **anyone** | 🟢 | Public read access |
+  | **authenticated** | 🔵 | Must be logged in |
+  | **isMedewerker** | 🟡 | role = medewerker or admin |
+  | **isLid** | 🟠 | role = lid, medewerker, or admin |
+  | **isAdmin** | 🔴 | role = admin only |
+  | **self only** | ⚪ | user.id === resource.owner |
+endlegend
+
+' ============================================
+' HOOKS LEGEND
+' ============================================
+legend bottom right
+  **Hook Flow:**
+  ──────────────────
+  users.beforeChange
+  └─ Force non-privileged → 'lid'
+
+  abonnementen.beforeChange
+  └─ Set eindDatum on cancel
+
+  cursusinschrijvingen.beforeChange
+  └─ Ownership → Addendum → Duplicate
+
+  coachafspraken.beforeChange
+  └─ Ownership → Time conflict
+
+  toegangspogingen.beforeValidate
+  └─ Ownership → Auto access logic
+endlegend
+
+' ============================================
+' CUSTOM API ENDPOINT
+' ============================================
+rectangle "Custom API Endpoints" as api #E8F6F3 {
+  class register_lid <<API>> {
+    POST /api/register-lid
+    ----
+    Body: { name, email,
+      password, abonnementId }
+    ----
+    1. Validate fields
+    2. Check email uniqueness
+    3. Validate subscription
+    4. Create Lid record
+    5. Create User (role: lid)
+    6. Link Lid ↔ User
+  }
+}
+
+register_lid --> leden : creates
+register_lid --> users : creates
+register_lid --> abonnementen : validates
+
+' ============================================
+' PLUGINS
+' ============================================
+rectangle "Plugins" as plugins #F0E6FF {
+  class seo_plugin <<Plugin>> {
+    generateTitle:
+      "<title> | Sportschool De Kast"
+    generateURL:
+      "${serverUrl}/${slug}"
+  }
+
+  class formbuilder_plugin <<Plugin>> {
+    payment: disabled
+    confirmationMessage:
+      Lexical editor with
+      Heading h1-h4 + toolbar
+  }
+}
+
+seo_plugin ..> forms : extends
+formbuilder_plugin ..> form_submissions : creates
+
+@enduml

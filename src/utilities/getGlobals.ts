@@ -9,12 +9,18 @@ type Global = keyof Config['globals']
 async function getGlobal<T extends Global>(slug: T, depth = 0): Promise<DataFromGlobalSlug<T>> {
   const payload = await getPayload({ config: configPromise })
 
-  const global = await payload.findGlobal({
-    slug,
-    depth,
-  })
-
-  return global
+  try {
+    const global = await payload.findGlobal({
+      slug,
+      depth,
+    })
+    return global
+  } catch (err) {
+    // Globals header/footer zijn verwijderd in Sportschool De Kast setup.
+    // Geef fallback terug zodat frontend niet 500 geeft.
+    // @ts-expect-error fallback
+    return { navItems: [] } as DataFromGlobalSlug<T>
+  }
 }
 
 /**

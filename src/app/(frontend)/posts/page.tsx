@@ -12,48 +12,57 @@ export const dynamic = 'force-static'
 export const revalidate = 600
 
 export default async function Page() {
-  const payload = await getPayload({ config: configPromise })
+  // Sportschool De Kast: posts collection removed — redirect to cursussen
+  try {
+    const payload = await getPayload({ config: configPromise })
+    const posts = await payload.find({
+      collection: 'posts' as any,
+      depth: 1,
+      limit: 12,
+      overrideAccess: false,
+      select: {
+        title: true,
+        slug: true,
+        categories: true,
+        meta: true,
+      },
+    })
 
-  const posts = await payload.find({
-    collection: 'posts',
-    depth: 1,
-    limit: 12,
-    overrideAccess: false,
-    select: {
-      title: true,
-      slug: true,
-      categories: true,
-      meta: true,
-    },
-  })
+    return (
+      <div className="pt-24 pb-24">
+        <PageClient />
+        <div className="container mb-16">
+          <div className="prose dark:prose-invert max-w-none">
+            <h1>Posts</h1>
+          </div>
+        </div>
 
-  return (
-    <div className="pt-24 pb-24">
-      <PageClient />
-      <div className="container mb-16">
-        <div className="prose dark:prose-invert max-w-none">
-          <h1>Posts</h1>
+        <div className="container mb-8">
+          <PageRange
+            collection="posts"
+            currentPage={posts.page}
+            limit={12}
+            totalDocs={posts.totalDocs}
+          />
+        </div>
+
+        <CollectionArchive posts={posts.docs} />
+
+        <div className="container">
+          {posts.totalPages > 1 && posts.page && (
+            <Pagination page={posts.page} totalPages={posts.totalPages} />
+          )}
         </div>
       </div>
-
-      <div className="container mb-8">
-        <PageRange
-          collection="posts"
-          currentPage={posts.page}
-          limit={12}
-          totalDocs={posts.totalDocs}
-        />
+    )
+  } catch (err) {
+    return (
+      <div className="pt-24 pb-24 container">
+        <h1 className="text-2xl font-bold">Posts verwijderd</h1>
+        <p>Deze template posts zijn vervangen door Sportschool cursussen. Ga naar <a href="/cursussen" className="underline">Cursussen</a>.</p>
       </div>
-
-      <CollectionArchive posts={posts.docs} />
-
-      <div className="container">
-        {posts.totalPages > 1 && posts.page && (
-          <Pagination page={posts.page} totalPages={posts.totalPages} />
-        )}
-      </div>
-    </div>
-  )
+    )
+  }
 }
 
 export function generateMetadata(): Metadata {

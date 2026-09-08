@@ -5,14 +5,18 @@ import { unstable_cache } from 'next/cache'
 export async function getRedirects(depth = 1) {
   const payload = await getPayload({ config: configPromise })
 
-  const { docs: redirects } = await payload.find({
-    collection: 'redirects',
-    depth,
-    limit: 0,
-    pagination: false,
-  })
-
-  return redirects
+  try {
+    const { docs: redirects } = await payload.find({
+      collection: 'redirects' as any,
+      depth,
+      limit: 0,
+      pagination: false,
+    })
+    return redirects
+  } catch (err) {
+    // redirects collection is verwijderd (Sportschool De Kast) — geen redirects
+    return [] as any[]
+  }
 }
 
 /**

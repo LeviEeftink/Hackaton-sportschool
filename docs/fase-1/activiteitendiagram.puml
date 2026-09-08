@@ -1,0 +1,38 @@
+@startuml
+skinparam backgroundColor white
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 15
+skinparam ArrowColor #35536B
+skinparam roundcorner 8
+skinparam classBackgroundColor #F2F6FA
+skinparam classBorderColor #35536B
+skinparam activityBackgroundColor #F2F6FA
+skinparam activityBorderColor #35536B
+skinparam usecaseBackgroundColor #F2F6FA
+skinparam usecaseBorderColor #35536B
+skinparam defaultFontSize 14
+skinparam activityDiamondBackgroundColor #E7EEF5
+|Lid|
+start
+:Klik op Inchecken;
+|Server|
+:Start transactie voor\nhet eigen lid;
+:Lees lid en abonnement,\nreset teller bij nieuwe week;
+:Bepaal geldigheid en\nmaximum: 1, 2, oneindig of 0;
+if (Geldig en\nbezoeken < maximum?) then (ja)
+  :Besluit = Toegestaan,\nverhoog teller met 1;
+else (nee)
+  :Besluit = Geweigerd,\nbepaal concrete reden;
+endif
+:Sla poging op met\nserverdatum en verzoekId,\nvoer commit uit;
+if (Opslaan en commit gelukt?) then (ja)
+  :Antwoord = besluit,\nreden en actuele teller;
+else (nee)
+  :Draai wijzigingen terug,\nverleen geen toegang;
+  :Antwoord = storing,\nopnieuw proberen;
+endif
+|Lid|
+:Bekijk antwoord;
+stop
+@enduml

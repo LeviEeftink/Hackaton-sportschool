@@ -1,33 +1,21 @@
-import type { CollectionSlug, GlobalSlug, Payload, PayloadRequest, File } from 'payload'
+import type { CollectionSlug, Payload, PayloadRequest } from 'payload'
 
-import { contactForm as contactFormData } from './contact-form'
-import { contact as contactPageData } from './contact-page'
-import { home } from './home'
-import { image1 } from './image-1'
-import { image2 } from './image-2'
-import { imageHero1 } from './image-hero-1'
-import { post1 } from './post-1'
-import { post2 } from './post-2'
-import { post3 } from './post-3'
-
+// Sportschool De Kast — uitgebreide presets + demo accounts
 const collections: CollectionSlug[] = [
-  'categories',
   'media',
-  'pages',
-  'posts',
+  'users',
+  'abonnementen',
+  'leden',
+  'coaches',
+  'medewerkers',
+  'cursussen',
+  'cursus-inschrijvingen',
+  'coach-afspraken',
+  'toegangspogingen',
   'forms',
   'form-submissions',
-  'search',
 ]
 
-const globals: GlobalSlug[] = ['header', 'footer']
-
-const categories = ['Technology', 'News', 'Finance', 'Design', 'Software', 'Engineering']
-
-// Next.js revalidation errors are normal when seeding the database without a server running
-// i.e. running `yarn seed` locally instead of using the admin UI within an active app
-// The app is not running to revalidate the pages and so the API routes are not available
-// These error messages can be ignored: `Error hitting revalidate route for...`
 export const seed = async ({
   payload,
   req,
@@ -35,264 +23,310 @@ export const seed = async ({
   payload: Payload
   req: PayloadRequest
 }): Promise<void> => {
-  payload.logger.info('Seeding database...')
+  payload.logger.info('Seeding Sportschool De Kast database met presets...')
 
-  // we need to clear the media directory before seeding
-  // as well as the collections and globals
-  // this is because while `yarn seed` drops the database
-  // the custom `/api/seed` endpoint does not
-  payload.logger.info(`— Clearing collections and globals...`)
-
-  // clear the database
-  await Promise.all(
-    globals.map((global) =>
-      payload.updateGlobal({
-        slug: global,
-        data: {
-          navItems: [],
-        },
-        depth: 0,
-        context: {
-          disableRevalidate: true,
-        },
-      }),
-    ),
-  )
-
+  // Clear collections
   await Promise.all(
     collections.map((collection) => payload.db.deleteMany({ collection, req, where: {} })),
   )
 
   await Promise.all(
     collections
-      .filter((collection) => Boolean(payload.collections[collection].config.versions))
+      .filter((collection) => Boolean((payload.collections[collection]?.config as any)?.versions))
       .map((collection) => payload.db.deleteVersions({ collection, req, where: {} })),
   )
 
-  payload.logger.info(`— Seeding demo author and user...`)
+  // ========== ABONNEMENTEN PRESETS (credits) ==========
+  payload.logger.info('— Seeding abonnementen presets...')
+  const abonnementen = {
+    basis1x: await payload.create({
+      collection: 'abonnementen',
+      data: {
+        type: 'EenKeerPerWeek',
+        status: 'Actief',
+        startDatum: new Date().toISOString(),
+        bezoekenDezeWeek: 0,
+        heeftCursusAddendum: false,
+      },
+    }),
+    basis1xCursus: await payload.create({
+      collection: 'abonnementen',
+      data: {
+        type: 'EenKeerPerWeek',
+        status: 'Actief',
+        startDatum: new Date().toISOString(),
+        bezoekenDezeWeek: 0,
+        heeftCursusAddendum: true,
+      },
+    }),
+    basis2x: await payload.create({
+      collection: 'abonnementen',
+      data: {
+        type: 'TweeKeerPerWeek',
+        status: 'Actief',
+        startDatum: new Date().toISOString(),
+        bezoekenDezeWeek: 0,
+        heeftCursusAddendum: false,
+      },
+    }),
+    basis2xCursus: await payload.create({
+      collection: 'abonnementen',
+      data: {
+        type: 'TweeKeerPerWeek',
+        status: 'Actief',
+        startDatum: new Date().toISOString(),
+        bezoekenDezeWeek: 1,
+        heeftCursusAddendum: true,
+      },
+    }),
+    premium: await payload.create({
+      collection: 'abonnementen',
+      data: {
+        type: 'Onbeperkt',
+        status: 'Actief',
+        startDatum: new Date().toISOString(),
+        bezoekenDezeWeek: 0,
+        heeftCursusAddendum: true,
+      },
+    }),
+    premiumZonderCursus: await payload.create({
+      collection: 'abonnementen',
+      data: {
+        type: 'Onbeperkt',
+        status: 'Actief',
+        startDatum: new Date().toISOString(),
+        bezoekenDezeWeek: 2,
+        heeftCursusAddendum: false,
+      },
+    }),
+  }
 
-  await payload.delete({
+  // ========== LEDEN PRESETS ==========
+  payload.logger.info('— Seeding leden presets...')
+  const leden = {
+    jan: await payload.create({
+      collection: 'leden',
+      data: { naam: 'Jan Jansen', email: 'jan@dekast.nl', status: 'Actief', abonnement: abonnementen.premium.id },
+    }),
+    piet: await payload.create({
+      collection: 'leden',
+      data: { naam: 'Piet Pietersen', email: 'piet@dekast.nl', status: 'Actief', abonnement: abonnementen.basis1x.id },
+    }),
+    marie: await payload.create({
+      collection: 'leden',
+      data: { naam: 'Marie de Vries', email: 'marie@dekast.nl', status: 'Actief', abonnement: abonnementen.basis2xCursus.id },
+    }),
+    sophie: await payload.create({
+      collection: 'leden',
+      data: { naam: 'Sophie Bakker', email: 'sophie@dekast.nl', status: 'Actief', abonnement: abonnementen.basis1xCursus.id },
+    }),
+    thomas: await payload.create({
+      collection: 'leden',
+      data: { naam: 'Thomas Visser', email: 'thomas@dekast.nl', status: 'Actief', abonnement: abonnementen.basis2x.id },
+    }),
+  }
+
+  // ========== COACHES PRESETS (5) ==========
+  payload.logger.info('— Seeding coaches presets (5)...')
+  const coaches = {
+    klaas: await payload.create({
+      collection: 'coaches',
+      data: { naam: 'Klaas Fitness', email: 'klaas@dekast.nl', specialisatie: 'Fitness & Kracht', status: 'Actief' },
+    }),
+    yara: await payload.create({
+      collection: 'coaches',
+      data: { naam: 'Yara Yoga', email: 'yara@dekast.nl', specialisatie: 'Yoga & Mindfulness', status: 'Actief' },
+    }),
+    milan: await payload.create({
+      collection: 'coaches',
+      data: { naam: 'Milan CrossFit', email: 'milan@dekast.nl', specialisatie: 'CrossFit & HIIT', status: 'Actief' },
+    }),
+    lisa: await payload.create({
+      collection: 'coaches',
+      data: { naam: 'Lisa Pilates', email: 'lisa@dekast.nl', specialisatie: 'Pilates & Core', status: 'Actief' },
+    }),
+    dennis: await payload.create({
+      collection: 'coaches',
+      data: { naam: 'Dennis Boksen', email: 'dennis@dekast.nl', specialisatie: 'Boksen & Conditie', status: 'Actief' },
+    }),
+  }
+
+  // ========== MEDEWERKERS PRESETS ==========
+  payload.logger.info('— Seeding medewerkers presets...')
+  const medewerkers = {
+    roos: await payload.create({
+      collection: 'medewerkers',
+      data: { naam: 'Roos Receptie', email: 'roos@dekast.nl', rol: 'Receptie', status: 'Actief' },
+    }),
+    bram: await payload.create({
+      collection: 'medewerkers',
+      data: { naam: 'Bram Beheer', email: 'bram@dekast.nl', rol: 'Beheer', status: 'Actief' },
+    }),
+    eva: await payload.create({
+      collection: 'medewerkers',
+      data: { naam: 'Eva Manager', email: 'eva@dekast.nl', rol: 'Manager', status: 'Actief' },
+    }),
+  }
+
+  // ========== CURSUSSEN PRESETS (6) met momenten ==========
+  payload.logger.info('— Seeding cursussen presets (6)...')
+  const now = Date.now()
+  const dag = 86400000
+  const mkMoment = (d: number, h: number) => {
+    const dte = new Date(now + d * dag)
+    dte.setHours(h, 0, 0, 0)
+    return dte.toISOString()
+  }
+
+  const cursussen = {
+    yoga: await payload.create({
+      collection: 'cursussen',
+      data: {
+        naam: 'Yoga Beginners',
+        status: 'Actief',
+        beschikbareMomenten: [{ moment: mkMoment(1, 9) }, { moment: mkMoment(3, 9) }, { moment: mkMoment(5, 18) }],
+      },
+    }),
+    crossfit: await payload.create({
+      collection: 'cursussen',
+      data: {
+        naam: 'CrossFit Intro',
+        status: 'Actief',
+        beschikbareMomenten: [{ moment: mkMoment(1, 18) }, { moment: mkMoment(2, 18) }, { moment: mkMoment(4, 18) }],
+      },
+    }),
+    pilates: await payload.create({
+      collection: 'cursussen',
+      data: {
+        naam: 'Pilates Core',
+        status: 'Actief',
+        beschikbareMomenten: [{ moment: mkMoment(2, 10) }, { moment: mkMoment(4, 10) }],
+      },
+    }),
+    boksen: await payload.create({
+      collection: 'cursussen',
+      data: {
+        naam: 'Boksen Techniek',
+        status: 'Actief',
+        beschikbareMomenten: [{ moment: mkMoment(1, 19) }, { moment: mkMoment(3, 19) }],
+      },
+    }),
+    hiit: await payload.create({
+      collection: 'cursussen',
+      data: {
+        naam: 'HIIT Burn',
+        status: 'Actief',
+        beschikbareMomenten: [{ moment: mkMoment(2, 7) }, { moment: mkMoment(5, 7) }],
+      },
+    }),
+    spinning: await payload.create({
+      collection: 'cursussen',
+      data: {
+        naam: 'Spinning Power',
+        status: 'Actief',
+        beschikbareMomenten: [{ moment: mkMoment(3, 7) }, { moment: mkMoment(6, 9) }],
+      },
+    }),
+  }
+
+  // ========== DEMO USERS (login) ==========
+  payload.logger.info('— Seeding demo users met login...')
+  // Medewerker kan inloggen en leden beheren — gebruik context.allowPrivilegedRole zodat hook het toelaat
+  const medewerkerUser = await payload.create({
     collection: 'users',
-    depth: 0,
-    where: {
-      email: {
-        equals: 'demo-author@example.com',
-      },
-    },
-  })
-
-  payload.logger.info(`— Seeding media...`)
-
-  const [image1Buffer, image2Buffer, image3Buffer, hero1Buffer] = await Promise.all([
-    fetchFileByURL(
-      'https://raw.githubusercontent.com/payloadcms/payload/refs/heads/3.x/templates/website/src/endpoints/seed/image-post1.webp',
-    ),
-    fetchFileByURL(
-      'https://raw.githubusercontent.com/payloadcms/payload/refs/heads/3.x/templates/website/src/endpoints/seed/image-post2.webp',
-    ),
-    fetchFileByURL(
-      'https://raw.githubusercontent.com/payloadcms/payload/refs/heads/3.x/templates/website/src/endpoints/seed/image-post3.webp',
-    ),
-    fetchFileByURL(
-      'https://raw.githubusercontent.com/payloadcms/payload/refs/heads/3.x/templates/website/src/endpoints/seed/image-hero1.webp',
-    ),
-  ])
-
-  const [demoAuthor, image1Doc, image2Doc, image3Doc, imageHomeDoc] = await Promise.all([
-    payload.create({
-      collection: 'users',
-      data: {
-        name: 'Demo Author',
-        email: 'demo-author@example.com',
-        password: 'password',
-      },
-    }),
-    payload.create({
-      collection: 'media',
-      data: image1,
-      file: image1Buffer,
-    }),
-    payload.create({
-      collection: 'media',
-      data: image2,
-      file: image2Buffer,
-    }),
-    payload.create({
-      collection: 'media',
-      data: image2,
-      file: image3Buffer,
-    }),
-    payload.create({
-      collection: 'media',
-      data: imageHero1,
-      file: hero1Buffer,
-    }),
-    categories.map((category) =>
-      payload.create({
-        collection: 'categories',
-        data: {
-          title: category,
-          slug: category,
-        },
-      }),
-    ),
-  ])
-
-  payload.logger.info(`— Seeding posts...`)
-
-  // Do not create posts with `Promise.all` because we want the posts to be created in order
-  // This way we can sort them by `createdAt` or `publishedAt` and they will be in the expected order
-  const post1Doc = await payload.create({
-    collection: 'posts',
-    depth: 0,
-    context: {
-      disableRevalidate: true,
-    },
-    data: post1({ heroImage: image1Doc, blockImage: image2Doc, author: demoAuthor }),
-  })
-
-  const post2Doc = await payload.create({
-    collection: 'posts',
-    depth: 0,
-    context: {
-      disableRevalidate: true,
-    },
-    data: post2({ heroImage: image2Doc, blockImage: image3Doc, author: demoAuthor }),
-  })
-
-  const post3Doc = await payload.create({
-    collection: 'posts',
-    depth: 0,
-    context: {
-      disableRevalidate: true,
-    },
-    data: post3({ heroImage: image3Doc, blockImage: image1Doc, author: demoAuthor }),
-  })
-
-  // update each post with related posts
-  await payload.update({
-    id: post1Doc.id,
-    collection: 'posts',
     data: {
-      relatedPosts: [post2Doc.id, post3Doc.id],
+      name: 'Roos Receptie (Medewerker)',
+      email: 'medewerker@dekast.nl',
+      password: 'medewerker123',
+      role: 'medewerker',
+      medewerker: medewerkers.roos.id,
     },
+    context: { allowPrivilegedRole: true },
+    overrideAccess: true,
   })
-  await payload.update({
-    id: post2Doc.id,
-    collection: 'posts',
+  const adminUser = await payload.create({
+    collection: 'users',
     data: {
-      relatedPosts: [post1Doc.id, post3Doc.id],
+      name: 'Bram Beheer (Admin)',
+      email: 'admin@dekast.nl',
+      password: 'admin123',
+      role: 'admin',
+      medewerker: medewerkers.bram.id,
     },
+    context: { allowPrivilegedRole: true },
+    overrideAccess: true,
   })
-  await payload.update({
-    id: post3Doc.id,
-    collection: 'posts',
+  // Leden kunnen inloggen en boeken
+  const lidUserJan = await payload.create({
+    collection: 'users',
     data: {
-      relatedPosts: [post1Doc.id, post2Doc.id],
+      name: 'Jan Jansen',
+      email: 'jan@dekast.nl',
+      password: 'lid123',
+      role: 'lid',
+      lid: leden.jan.id,
     },
+    overrideAccess: true,
+  })
+  const lidUserSophie = await payload.create({
+    collection: 'users',
+    data: {
+      name: 'Sophie Bakker',
+      email: 'sophie@dekast.nl',
+      password: 'lid123',
+      role: 'lid',
+      lid: leden.sophie.id,
+    },
+    overrideAccess: true,
+  })
+  const lidUserPiet = await payload.create({
+    collection: 'users',
+    data: {
+      name: 'Piet Pietersen',
+      email: 'piet@dekast.nl',
+      password: 'lid123',
+      role: 'lid',
+      lid: leden.piet.id,
+    },
+    overrideAccess: true,
+  })
+  // Coach user
+  await payload.create({
+    collection: 'users',
+    data: {
+      name: 'Klaas Fitness (Coach)',
+      email: 'klaas@dekast.nl',
+      password: 'coach123',
+      role: 'coach',
+      coach: coaches.klaas.id,
+    },
+    context: { allowPrivilegedRole: true },
+    overrideAccess: true,
   })
 
-  payload.logger.info(`— Seeding contact form...`)
-
-  const contactForm = await payload.create({
-    collection: 'forms',
-    depth: 0,
-    data: contactFormData,
+  payload.logger.info('— Seeding voorbeeld boekingen...')
+  // Piet heeft geen cursus addendum, dus geen inschrijving voor hem (test credits)
+  await payload.create({
+    collection: 'cursus-inschrijvingen',
+    data: { lid: leden.jan.id, cursus: cursussen.yoga.id, moment: mkMoment(1, 9), status: 'Bevestigd' },
+  })
+  await payload.create({
+    collection: 'cursus-inschrijvingen',
+    data: { lid: leden.sophie.id, cursus: cursussen.pilates.id, moment: mkMoment(2, 10), status: 'Bevestigd' },
+  })
+  await payload.create({
+    collection: 'coach-afspraken',
+    data: { lid: leden.jan.id, coach: coaches.klaas.id, datumTijd: mkMoment(7, 10), status: 'Bevestigd' },
+  })
+  await payload.create({
+    collection: 'toegangspogingen',
+    data: { lid: leden.jan.id, datumTijd: new Date().toISOString(), resultaat: 'Toegestaan', reden: 'Toegang toegestaan.' },
+  })
+  await payload.create({
+    collection: 'toegangspogingen',
+    data: { lid: leden.piet.id, datumTijd: new Date().toISOString(), resultaat: 'Geweigerd', reden: 'Weeklimiet bereikt.' },
   })
 
-  payload.logger.info(`— Seeding pages...`)
-
-  const [_, contactPage] = await Promise.all([
-    payload.create({
-      collection: 'pages',
-      depth: 0,
-      data: home({ heroImage: imageHomeDoc, metaImage: image2Doc }),
-    }),
-    payload.create({
-      collection: 'pages',
-      depth: 0,
-      data: contactPageData({ contactForm: contactForm }),
-    }),
-  ])
-
-  payload.logger.info(`— Seeding globals...`)
-
-  await Promise.all([
-    payload.updateGlobal({
-      slug: 'header',
-      data: {
-        navItems: [
-          {
-            link: {
-              type: 'custom',
-              label: 'Posts',
-              url: '/posts',
-            },
-          },
-          {
-            link: {
-              type: 'reference',
-              label: 'Contact',
-              reference: {
-                relationTo: 'pages',
-                value: contactPage.id,
-              },
-            },
-          },
-        ],
-      },
-    }),
-    payload.updateGlobal({
-      slug: 'footer',
-      data: {
-        navItems: [
-          {
-            link: {
-              type: 'custom',
-              label: 'Admin',
-              url: '/admin',
-            },
-          },
-          {
-            link: {
-              type: 'custom',
-              label: 'Source Code',
-              newTab: true,
-              url: 'https://github.com/payloadcms/payload/tree/3.x/templates/website',
-            },
-          },
-          {
-            link: {
-              type: 'custom',
-              label: 'Payload',
-              newTab: true,
-              url: 'https://payloadcms.com/',
-            },
-          },
-        ],
-      },
-    }),
-  ])
-
-  payload.logger.info('Seeded database successfully!')
-}
-
-async function fetchFileByURL(url: string): Promise<File> {
-  const res = await fetch(url, {
-    credentials: 'include',
-    method: 'GET',
-  })
-
-  if (!res.ok) {
-    throw new Error(`Failed to fetch file from ${url}, status: ${res.status}`)
-  }
-
-  const data = await res.arrayBuffer()
-
-  return {
-    name: url.split('/').pop() || `file-${Date.now()}`,
-    data: Buffer.from(data),
-    mimetype: `image/${url.split('.').pop()}`,
-    size: data.byteLength,
-  }
+  payload.logger.info('✅ Seeded Sportschool De Kast database successfully!')
+  payload.logger.info('Demo accounts: medewerker@dekast.nl/medewerker123, admin@dekast.nl/admin123, jan@dekast.nl/lid123, sophie@dekast.nl/lid123, piet@dekast.nl/lid123, klaas@dekast.nl/coach123')
 }

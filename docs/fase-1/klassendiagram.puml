@@ -1,0 +1,149 @@
+@startuml
+top to bottom direction
+skinparam backgroundColor white
+skinparam shadowing false
+skinparam roundcorner 0
+skinparam defaultFontName Arial
+skinparam defaultFontSize 17
+skinparam classAttributeIconSize 0
+skinparam classBackgroundColor white
+skinparam classHeaderBackgroundColor white
+skinparam classBorderColor black
+skinparam ArrowColor black
+skinparam ArrowThickness 1.4
+skinparam classBorderThickness 1
+skinparam linetype ortho
+skinparam nodesep 70
+skinparam ranksep 65
+skinparam classFontStyle bold
+hide circle
+abstract class Persoon {
+  -id: int
+  -naam: String
+  -email: String
+  -status: Status
+  --
+  +WijzigGegevens(): void
+  +WijzigStatus(status: Status): void
+}
+class Lid <<entity>> {
+  -abonnement: Abonnement
+  --
+  +KoppelAbonnement(): void
+  +ControleerToegang(): Toegangspoging
+  +SchrijfIn(): CursusInschrijving
+  +PlanAfspraak(): CoachAfspraak
+}
+class Medewerker <<entity>> {
+  -rol: String
+  --
+  +MaakLidAan(): Lid
+  +BeheerAbonnement(): void
+  +BeheerCursus(): void
+  +BeheerCoach(): void
+}
+class Coach <<entity>> {
+  -specialisatie: String
+  --
+  +HeeftAfspraak(moment: DateTime): bool
+}
+class Gebruikersaccount <<entity>> {
+  -id: int
+  -email: String
+  -wachtwoordHash: String
+  -rol: Gebruikersrol
+  --
+  +Inloggen(): bool
+  +Uitloggen(): void
+}
+class Abonnement <<entity>> {
+  -id: int
+  -type: Abonnementstype
+  -status: Status
+  -startDatum: Date
+  -eindDatum: Date
+  -bezoekenDezeWeek: int
+  -weekStart: Date
+  -heeftCursusAddendum: bool
+  --
+  +MagNaarBinnen(): bool
+  +ResetWeeklimiet(): void
+  +Annuleer(): void
+}
+class Toegangspoging <<entity>> {
+  -id: int
+  -datumTijd: DateTime
+  -resultaat: ResultaatToegang
+  -reden: String
+  -verzoekId: UUID
+  --
+  +Registreer(): void
+}
+class Cursus <<entity>> {
+  -id: int
+  -naam: String
+  -status: Status
+  --
+  +VoegMomentToe(): void
+  +WijzigStatus(status: Status): void
+}
+class CursusMoment <<entity>> {
+  -id: int
+  -moment: DateTime
+  --
+  +IsBeschikbaar(): bool
+}
+class CursusInschrijving <<entity>> {
+  -id: int
+  -inschrijfDatum: DateTime
+  -status: Status
+  --
+  +Bevestig(): void
+  +AnnuleerInschrijving(): void
+}
+class CoachAfspraak <<entity>> {
+  -id: int
+  -datumTijd: DateTime
+  -status: Status
+  --
+  +Bevestig(): void
+  +AnnuleerAfspraak(): void
+}
+enum Gebruikersrol {
+  lid
+  medewerker
+  coach
+  admin
+}
+enum Status {
+  Actief
+  Inactief
+  Geannuleerd
+  Bevestigd
+}
+enum Abonnementstype {
+  EenKeerPerWeek
+  TweeKeerPerWeek
+  Onbeperkt
+  CursusAddendum
+}
+enum ResultaatToegang {
+  Toegestaan
+  Geweigerd
+}
+Persoon <|-- Lid
+Persoon <|-- Medewerker
+Persoon <|-- Coach
+Gebruikersaccount -- Persoon : profiel
+Lid -- Abonnement : abonnement
+Lid -- Toegangspoging : toegang
+Lid -- CursusInschrijving : inschrijving
+Lid -- CoachAfspraak : afspraak
+Coach -- CoachAfspraak : begeleiding
+Cursus *-- CursusMoment : momenten
+CursusMoment -- CursusInschrijving : gekozen moment
+Gebruikersaccount ..> Gebruikersrol : <<use>>
+Persoon ..> Status : <<use>>
+Abonnement ..> Abonnementstype : <<use>>
+Toegangspoging ..> ResultaatToegang : <<use>>
+@enduml
