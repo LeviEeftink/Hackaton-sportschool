@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="360" viewBox="0 0 1280 360" role="img" aria-labelledby="title desc">
+<title id="title">Sportschool De Kast</title>
+<desc id="desc">Jouw sportzaken, op één plek. Leden, toegang en coaching.</desc>
+<rect width="1280" height="360" rx="20" fill="#172a23"/>
+<path d="M820 0H1280V360H1000Z" fill="#213a2f"/>
+<g fill="none" stroke="#375344"><path d="M880 0V360M960 0V360M1040 0V360M1120 0V360M1200 0V360"/><path d="M820 80H1280M820 160H1280M820 240H1280M820 320H1280"/></g>
+<circle cx="58" cy="52" r="4" fill="#d4ef8b"/>
+<text x="76" y="57" font-family="Arial,Helvetica,sans-serif" font-size="14" font-weight="700" letter-spacing="3" fill="#d4ef8b">SPORTSCHOOL MANAGEMENT</text>
+<text x="50" y="175" font-family="Arial,Helvetica,sans-serif" font-size="104" font-weight="800" letter-spacing="-5" fill="#f4f3e9">DE KAST.</text>
+<text x="56" y="223" font-family="Arial,Helvetica,sans-serif" font-size="25" fill="#d7ded2">Jouw sportzaken, op één plek.</text>
+<path d="M56 266H730" stroke="#43604e"/>
+<g font-family="Arial,Helvetica,sans-serif" font-size="14" letter-spacing="2" fill="#becbbb"><text x="56" y="308">LEDEN</text><text x="192" y="308">TOEGANG</text><text x="370" y="308">COACHING</text></g>
+<g transform="translate(880 85) rotate(-18 140 95)" fill="#d4ef8b"><rect x="20" y="79" width="255" height="32" rx="8"/><rect x="45" y="26" width="34" height="138" rx="8"/><rect x="87" y="0" width="44" height="190" rx="9"/><rect x="172" y="0" width="44" height="190" rx="9"/><rect x="224" y="26" width="34" height="138" rx="8"/></g>
+<text x="930" y="320" font-family="Arial,Helvetica,sans-serif" font-size="13" letter-spacing="3" fill="#9ab19f">BUILD. MOVE. REPEAT.</text>
+</svg>

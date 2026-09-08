@@ -1,8 +1,11 @@
 build
-dist / media
+dist/
+media/
 node_modules
 .DS_Store
 .env
+.env.*
+!.env.example
 .next
 next-env.d.ts
 .vercel
@@ -20,3 +23,21 @@ node_modules/
 /playwright-report/
 /blob-report/
 /playwright/.cache/
+
+# Local databases and TypeScript cache
+*.db
+*.db-*
+*.sqlite
+*.sqlite-*
+*.sqlite3
+*.sqlite3-*
+*.tsbuildinfo
+
+# Office temporary files and Python/render caches
+~$*
+~WRL*.tmp
+__pycache__/
+*.pyc
+docs/fase-1/qa/
+docs/fase-1/qa-aangepast/
+docs/fase-1/render-controle.json

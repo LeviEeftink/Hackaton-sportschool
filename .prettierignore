@@ -9,6 +9,5 @@
 **/dist/**
 **/node_modules
 **/temp
-**/docs/**
+docs/fase-1/**
 tsconfig.json
-
