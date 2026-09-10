@@ -1,98 +1,13 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-
-type Abonnement = {
-  id: number
-  type: string
-  heeftCursusAddendum: boolean
-  label?: string
-}
-
+import { ArrowUpRight } from 'lucide-react'
+import { membershipLabel } from '@/components/kast/format'
+type Plan={id:number;type:string;heeftCursusAddendum?:boolean|null;status:string}
 export default function RegisterForm() {
-  const [name, setName] = useState('')
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [abonnementId, setAbonnementId] = useState<string>('')
-  const [abonnementen, setAbonnementen] = useState<Abonnement[]>([])
-  const [error, setError] = useState('')
-  const [loading, setLoading] = useState(false)
-
-  useEffect(() => {
-    fetch('/api/abonnementen?limit=100')
-      .then((r) => r.json())
-      .then((data) => {
-        setAbonnementen(data.docs || [])
-        if (data.docs?.[0]) setAbonnementId(String(data.docs[0].id))
-      })
-      .catch(() => {})
-  }, [])
-
-  async function onSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    setError('')
-    setLoading(true)
-    try {
-      // 1. Maak Lid aan via payload API? Maar Leden is alleen voor medewerker.
-      // We doen het via custom register endpoint: eerst abonnement kiezen, dan lid + user via /api/register-lid
-      const res = await fetch('/api/register-lid', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password, abonnementId: Number(abonnementId) }),
-      })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.message || 'Registratie mislukt')
-
-      // Auto login na registratie
-      const loginRes = await fetch('/api/users/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      })
-      if (!loginRes.ok) throw new Error('Registratie gelukt, maar inloggen mislukt')
-      window.location.href = '/dashboard'
-    } catch (err: any) {
-      setError(err.message)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  function labelFor(a: Abonnement) {
-    const typeLabel =
-      a.type === 'EenKeerPerWeek' ? '1x/week' : a.type === 'TweeKeerPerWeek' ? '2x/week' : a.type === 'Onbeperkt' ? 'Onbeperkt' : a.type
-    return `${typeLabel} ${a.heeftCursusAddendum ? '+ Cursus' : ''} (#${a.id})`
-  }
-
-  return (
-    <form onSubmit={onSubmit} className="space-y-4 border p-6 rounded-lg">
-      <div>
-        <label className="block text-sm font-medium mb-1">Naam</label>
-        <input className="w-full border rounded px-3 py-2" value={name} onChange={(e) => setName(e.target.value)} required />
-      </div>
-      <div>
-        <label className="block text-sm font-medium mb-1">Email</label>
-        <input className="w-full border rounded px-3 py-2" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-      </div>
-      <div>
-        <label className="block text-sm font-medium mb-1">Wachtwoord</label>
-        <input className="w-full border rounded px-3 py-2" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
-      </div>
-      <div>
-        <label className="block text-sm font-medium mb-1">Abonnement (credits)</label>
-        <select className="w-full border rounded px-3 py-2" value={abonnementId} onChange={(e) => setAbonnementId(e.target.value)} required>
-          {abonnementen.map((a) => (
-            <option key={a.id} value={String(a.id)}>
-              {labelFor(a)}
-            </option>
-          ))}
-        </select>
-        <p className="text-xs text-muted-foreground mt-1">1x/week = 1 credit/week, 2x/week = 2 credits, Onbeperkt = ∞. +Cursus = mag cursussen boeken.</p>
-      </div>
-      {error && <p className="text-sm text-red-600">{error}</p>}
-      <button type="submit" disabled={loading} className="w-full bg-black text-white rounded px-4 py-2 disabled:opacity-50">
-        {loading ? 'Registreren...' : 'Account aanmaken'}
-      </button>
-    </form>
-  )
+  const [name,setName]=useState(''),[email,setEmail]=useState(''),[password,setPassword]=useState(''),[plan,setPlan]=useState(''),[plans,setPlans]=useState<Plan[]>([]),[error,setError]=useState(''),[loading,setLoading]=useState(false),[fetching,setFetching]=useState(true)
+  const router=useRouter()
+  useEffect(()=>{let active=true;async function load(){try {const res=await fetch('/api/abonnementen?where[status][equals]=Actief&limit=100');if(!res.ok)throw new Error('Abonnementen kunnen niet worden geladen. Probeer het later opnieuw.');const data=await res.json();if(active){setPlans(data.docs||[]);setPlan(data.docs?.[0]?String(data.docs[0].id):'')}}catch(err){if(active)setError(err instanceof Error?err.message:'Abonnementen laden mislukt.')}finally{if(active)setFetching(false)}}void load();return()=>{active=false}},[])
+  async function onSubmit(e:React.FormEvent){e.preventDefault();setLoading(true);setError('');try{const res=await fetch('/api/register-lid',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,email,password,abonnementId:Number(plan)})});const data=await res.json();if(!res.ok)throw new Error(res.status>=500?'Aanmelden lukt nu niet. Probeer het later opnieuw.':data.message||'Controleer je gegevens en probeer opnieuw.');const login=await fetch('/api/users/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password})});if(!login.ok){router.push('/login');return}router.push('/dashboard');router.refresh()}catch(err){setError(err instanceof Error?err.message:'Geen verbinding. Probeer het opnieuw.')}finally{setLoading(false)}}
+  return <form className="kast-form" onSubmit={onSubmit}><div className="field"><label htmlFor="register-name">Je naam</label><input id="register-name" autoComplete="name" placeholder="Voor- en achternaam" value={name} onChange={e=>setName(e.target.value)} required/></div><div className="field"><label htmlFor="register-email">E-mailadres</label><input id="register-email" type="email" autoComplete="email" placeholder="jij@voorbeeld.nl" value={email} onChange={e=>setEmail(e.target.value)} required/></div><div className="field"><label htmlFor="register-password">Kies een wachtwoord</label><input id="register-password" type="password" autoComplete="new-password" placeholder="Je nieuwe wachtwoord" value={password} onChange={e=>setPassword(e.target.value)} required/></div><div className="field"><label htmlFor="register-plan">Jouw abonnement</label><select id="register-plan" value={plan} onChange={e=>setPlan(e.target.value)} disabled={fetching||!plans.length} required>{!plans.length&&<option value="">{fetching?'Abonnementen laden...':'Geen abonnementen beschikbaar'}</option>}{plans.map(a=><option key={a.id} value={a.id}>{membershipLabel(a.type)}{a.heeftCursusAddendum?' + cursussen':''}</option>)}</select><small>{!fetching&&!plans.length?'Er zijn momenteel geen abonnementen beschikbaar. Neem contact op met de balie.':'Met cursusrecht kun je naast fitness ook cursusmomenten boeken.'}</small></div>{error&&<p className="feedback feedback-error" role="alert">{error}</p>}<button className="button button-dark button-full" disabled={loading||fetching||!plan}>{loading?'Account aanmaken...':'Word lid van De Kast'}<ArrowUpRight size={17}/></button></form>
 }

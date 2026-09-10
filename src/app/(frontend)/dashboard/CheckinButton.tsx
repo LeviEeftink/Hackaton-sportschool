@@ -1,36 +1,10 @@
 'use client'
 import { useState } from 'react'
-
-export default function CheckinButton({ lidId }: { lidId: number }) {
-  const [msg, setMsg] = useState('')
-  const [loading, setLoading] = useState(false)
-  async function checkin() {
-    setLoading(true)
-    setMsg('')
-    try {
-      const res = await fetch('/api/toegangspogingen', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ lid: lidId, datumTijd: new Date().toISOString() }),
-        // geen resultaat meegeven -> hook berekent automatisch (MagNaarBinnen)
-      })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.errors?.[0]?.message || data.message || 'Mislukt')
-      setMsg(`Resultaat: ${data.doc.resultaat} — ${data.doc.reden}`)
-      // refresh na 1s
-      setTimeout(() => window.location.reload(), 1000)
-    } catch (e: any) {
-      setMsg('Fout: ' + e.message)
-    } finally {
-      setLoading(false)
-    }
-  }
-  return (
-    <div className="flex items-center gap-2">
-      <button onClick={checkin} disabled={loading} className="bg-black text-white px-4 py-2 rounded disabled:opacity-50">
-        {loading ? '...' : 'Inchecken (ControleerToegang)'}
-      </button>
-      {msg && <span className="text-sm">{msg}</span>}
-    </div>
-  )
+import { useRouter } from 'next/navigation'
+import { ScanLine } from 'lucide-react'
+export default function CheckinButton({lidId}:{lidId:number}) {
+  const [message,setMessage]=useState(''),[busy,setBusy]=useState(false),[failed,setFailed]=useState(false)
+  const router=useRouter()
+  async function checkin(){setBusy(true);setMessage('');setFailed(false);try{const res=await fetch('/api/toegangspogingen',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({lid:lidId})});const data=await res.json();if(!res.ok)throw new Error('Inchecken lukt nu niet. Vraag de balie om hulp.');setMessage(`${data.doc.resultaat} — ${data.doc.reden}`);setFailed(data.doc.resultaat==='Geweigerd');router.refresh()}catch(err){setFailed(true);setMessage(err instanceof Error?err.message:'Geen verbinding. Vraag de balie om hulp.')}finally{setBusy(false)}}
+  return <div><button className="button button-lime" disabled={busy} onClick={checkin}><ScanLine size={18}/>{busy?'Toegang controleren...':'Check in bij De Kast'}</button>{message&&<p className={`feedback ${failed?'feedback-error':''}`} role={failed?'alert':'status'}>{message}</p>}</div>
 }

@@ -1,18 +1,19 @@
 import { getCurrentUser } from '@/utilities/getCurrentUser'
 import { redirect } from 'next/navigation'
+import Link from 'next/link'
+import { AuthLayout } from '@/components/kast/AuthLayout'
 import RegisterForm from './RegisterForm'
-
+export const metadata = { title: 'Lid worden' }
 export default async function RegisterPage() {
-  const user = await getCurrentUser()
-  if (user) redirect('/dashboard')
+  if (await getCurrentUser()) redirect('/dashboard')
   return (
-    <div className="container max-w-md mx-auto py-16">
-      <h1 className="text-3xl font-bold mb-2">Registreren</h1>
-      <p className="text-muted-foreground mb-6">Maak een account als lid. Kies je abonnement.</p>
+    <AuthLayout>
+      <h1>Lid worden</h1>
+      <p className="auth-description">Maak een account en kies je abonnement.</p>
       <RegisterForm />
-      <p className="mt-4 text-sm">
-        Al een account? <a href="/login" className="underline">Inloggen</a>
+      <p className="auth-bottom">
+        Al een account? <Link href="/login">Log hier in</Link>
       </p>
-    </div>
+    </AuthLayout>
   )
 }

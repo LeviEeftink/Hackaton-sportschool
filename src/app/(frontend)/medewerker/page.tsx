@@ -1,88 +1,17 @@
-import { getCurrentUserWithLid } from '@/utilities/getCurrentUser'
+import { getCurrentUser } from '@/utilities/getCurrentUser'
 import { getPayload } from 'payload'
 import config from '@payload-config'
 import { redirect } from 'next/navigation'
+import Link from 'next/link'
+import { Users, Dumbbell, CalendarDays, ArrowUpRight } from 'lucide-react'
+import { PortalShell, PageHeading, EmptyState, StatusPill } from '@/components/kast/PortalShell'
+import { membershipLabel } from '@/components/kast/format'
 import CreateLidForm from './CreateLidForm'
 import LidActions from './LidActions'
-
-export default async function MedewerkerPage() {
-  const data = await getCurrentUserWithLid()
-  if (!data?.user) redirect('/login')
-  const role = data.user.role
-  if (role !== 'medewerker' && role !== 'admin') redirect('/dashboard')
-
-  const payload = await getPayload({ config })
-  const leden = await payload.find({ collection: 'leden', limit: 100, depth: 2, overrideAccess: true })
-  const abonnementen = await payload.find({ collection: 'abonnementen', limit: 100, overrideAccess: true })
-  const cursussen = await payload.find({ collection: 'cursussen', limit: 100, overrideAccess: true })
-  const coaches = await payload.find({ collection: 'coaches', limit: 100, overrideAccess: true })
-
-  return (
-    <div className="container py-10">
-      <h1 className="text-3xl font-bold mb-2">Medewerker Beheer</h1>
-      <p className="text-muted-foreground mb-6">Beheer leden, abonnementen, en bekijk alle data. Alleen voor medewerker/admin.</p>
-
-      <div className="grid lg:grid-cols-2 gap-8">
-        <div>
-          <h2 className="text-xl font-semibold mb-3">Leden ({leden.totalDocs})</h2>
-          <div className="border rounded divide-y max-h-[600px] overflow-auto">
-            {leden.docs.map((l: any) => (
-              <div key={l.id} className="p-3">
-                <div className="flex justify-between">
-                  <span className="font-medium">{l.naam}</span>
-                  <span className="text-xs px-2 py-1 bg-muted rounded">{l.status}</span>
-                </div>
-                <p className="text-xs text-muted-foreground">{l.email}</p>
-                <p className="text-xs">
-                  Abonnement: {l.abonnement ? `${(l.abonnement as any).type} (${(l.abonnement as any).bezoekenDezeWeek}/${(l.abonnement as any).type === 'EenKeerPerWeek' ? 1 : (l.abonnement as any).type === 'TweeKeerPerWeek' ? 2 : '∞'}) ${ (l.abonnement as any).heeftCursusAddendum ? '+Cursus' : ''} — ${(l.abonnement as any).status}` : 'Geen'}
-                </p>
-                <LidActions lid={l} />
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="space-y-6">
-          <div className="border rounded p-4">
-            <h3 className="font-semibold mb-2">Nieuw lid + user aanmaken</h3>
-            <CreateLidForm abonnementen={abonnementen.docs as any} />
-          </div>
-
-          <div className="border rounded p-4">
-            <h3 className="font-semibold mb-2">Cursussen ({cursussen.totalDocs})</h3>
-            <ul className="text-sm space-y-1">
-              {cursussen.docs.map((c: any) => (
-                <li key={c.id} className="flex justify-between border-b py-1">
-                  <span>{c.naam}</span>
-                  <span className="text-xs">{c.beschikbareMomenten?.length || 0} momenten</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          <div className="border rounded p-4">
-            <h3 className="font-semibold mb-2">Coaches ({coaches.totalDocs})</h3>
-            <ul className="text-sm space-y-1">
-              {coaches.docs.map((c: any) => (
-                <li key={c.id} className="flex justify-between border-b py-1">
-                  <span>{c.naam} — {c.specialisatie}</span>
-                  <span className="text-xs">{c.status}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          <div className="border rounded p-4">
-            <h3 className="font-semibold mb-2">Snel naar admin</h3>
-            <div className="flex flex-wrap gap-2">
-              <a href="/admin/collections/leden" className="text-xs border px-3 py-1 rounded">Leden admin</a>
-              <a href="/admin/collections/abonnementen" className="text-xs border px-3 py-1 rounded">Abonnementen</a>
-              <a href="/admin/collections/cursus-inschrijvingen" className="text-xs border px-3 py-1 rounded">Inschrijvingen</a>
-              <a href="/admin/collections/toegangspogingen" className="text-xs border px-3 py-1 rounded">Toegang</a>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
+export const metadata={title:'Ledenbeheer'}
+export default async function MedewerkerPage(){
+  const user=await getCurrentUser();if(!user)redirect('/login');if(user.role!=='medewerker'&&user.role!=='admin')redirect('/dashboard')
+  const payload=await getPayload({config})
+  const [members,plans,courses,coaches]=await Promise.all([payload.find({collection:'leden',limit:100,depth:1,user,overrideAccess:false}),payload.find({collection:'abonnementen',where:{status:{equals:'Actief'}},limit:100,user,overrideAccess:false}),payload.find({collection:'cursussen',limit:100,user,overrideAccess:false}),payload.find({collection:'coaches',limit:100,user,overrideAccess:false})])
+  return <PortalShell name={user.name} staff><PageHeading eyebrow="ACHTER DE BALIE" title="Een club vol mensen." description="Beheer leden en houd het aanbod van De Kast in beweging." action={<a href="#nieuw-lid" className="button button-dark button-small">Nieuw lid<ArrowUpRight size={16}/></a>}/><div className="stat-grid">{[{label:'Leden',count:members.totalDocs,icon:Users},{label:'Cursussen',count:courses.totalDocs,icon:CalendarDays},{label:'Coaches',count:coaches.totalDocs,icon:Dumbbell}].map(({label,count,icon:Icon})=><div className="stat-card" key={label}><span>{label}<Icon size={18}/></span><strong>{count}</strong></div>)}</div><div className="dashboard-grid"><section className="content-panel"><div className="panel-top"><h2>Onze leden</h2><Link href="/admin/collections/leden" className="text-link">Uitgebreid beheer<ArrowUpRight size={14}/></Link></div><div className="member-list">{members.docs.length?members.docs.map(member=><article className="member-row" key={member.id}><div className="panel-top"><strong>{member.naam}</strong><StatusPill value={member.status}/></div><p>{member.email}</p><p>{membershipLabel(typeof member.abonnement==='object'?member.abonnement?.type:null)}</p><LidActions lid={member}/></article>):<EmptyState title="Nog geen leden" description="Maak rechts het eerste ledenaccount aan."/>}</div>{members.totalDocs>100&&<p className="catalog-subtitle">De eerste 100 leden worden getoond. Open uitgebreid beheer voor alle leden.</p>}</section><div><section className="content-panel" id="nieuw-lid"><div className="panel-top"><h2>Een nieuw gezicht</h2><Users size={18}/></div><CreateLidForm abonnementen={plans.docs}/></section><section className="content-panel"><div className="panel-top"><h2>Het sportaanbod</h2><Link href="/admin" className="text-link">Beheren<ArrowUpRight size={14}/></Link></div>{courses.docs.map(course=><div className="booking-row" key={course.id}><div className="booking-detail"><strong>{course.naam}</strong><p>{course.beschikbareMomenten?.length||0} cursusmomenten</p></div><StatusPill value={course.status}/></div>)}{coaches.docs.map(coach=><div className="booking-row" key={'coach'+coach.id}><div className="booking-detail"><strong>{coach.naam}</strong><p>{coach.specialisatie}</p></div><StatusPill value={coach.status}/></div>)}{!courses.docs.length&&!coaches.docs.length&&<EmptyState title="Maak ruimte voor sport" description="Voeg cursussen en coaches toe via de beheeromgeving."/>}</section><Link className="text-link" href="/admin/collections/toegangspogingen">Alle toegangspogingen bekijken<ArrowUpRight size={15}/></Link></div></div></PortalShell>
 }

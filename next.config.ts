@@ -23,6 +23,10 @@ const nextConfig: NextConfig = {
   images: {
     localPatterns: [
       {
+        pathname: '/images/**',
+        search: '',
+      },
+      {
         pathname: '/api/media/file/**',
       },
     ],

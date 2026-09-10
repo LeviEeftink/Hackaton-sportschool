@@ -2,238 +2,40 @@ import { getCurrentUserWithLid } from '@/utilities/getCurrentUser'
 import { redirect } from 'next/navigation'
 import { getPayload } from 'payload'
 import config from '@payload-config'
-import LogoutButton from './LogoutButton'
-import CheckinButton from './CheckinButton'
+import type { User, Leden, Abonnementen } from '@/payload-types'
 import Link from 'next/link'
-
-function getMaxForType(type: string) {
-  if (type === 'EenKeerPerWeek') return 1
-  if (type === 'TweeKeerPerWeek') return 2
-  if (type === 'Onbeperkt') return Infinity
-  return 0
-}
-
-export default async function DashboardPage() {
-  const data = await getCurrentUserWithLid()
-  if (!data?.user) redirect('/login')
-
-  const { user, lid, abonnement } = data
-  const role = user.role
-
-  // Medewerker dashboard
-  if (role === 'medewerker' || role === 'admin') {
-    const payload = await getPayload({ config })
-    const [ledenRes, inschrijvingenRes, afsprakenRes, toegangRes] = await Promise.all([
-      payload.find({ collection: 'leden', limit: 100, overrideAccess: true }),
-      payload.find({ collection: 'cursus-inschrijvingen', limit: 20, depth: 2, sort: '-createdAt', overrideAccess: true }),
-      payload.find({ collection: 'coach-afspraken', limit: 20, depth: 2, sort: '-createdAt', overrideAccess: true }),
-      payload.find({ collection: 'toegangspogingen', limit: 20, depth: 1, sort: '-createdAt', overrideAccess: true }),
+import { ArrowUpRight, CalendarDays, Users, Dumbbell, Activity, Clock3 } from 'lucide-react'
+import { PortalShell, PageHeading, EmptyState, StatusPill } from '@/components/kast/PortalShell'
+import { membershipLabel, visitLimit, dateLabel, timeLabel } from '@/components/kast/format'
+import CheckinButton from './CheckinButton'
+import { CancelBookingButton } from './CancelBookingButton'
+export const metadata={title:'Mijn overzicht'}
+export default async function DashboardPage(){
+  const data=await getCurrentUserWithLid()
+  if(!data?.user)redirect('/login')
+  const user=data.user as User, lid=data.lid as Leden|null, subscription=data.abonnement as Abonnementen|null
+  const staff=user.role==='medewerker'||user.role==='admin',payload=await getPayload({config})
+  if(staff){
+    const [members,courses,coaches,visits]=await Promise.all([
+      payload.find({collection:'leden',limit:5,sort:'-createdAt',user,overrideAccess:false}),
+      payload.count({collection:'cursus-inschrijvingen',user,overrideAccess:false}),
+      payload.count({collection:'coach-afspraken',user,overrideAccess:false}),
+      payload.find({collection:'toegangspogingen',limit:6,sort:'-createdAt',depth:1,user,overrideAccess:false}),
     ])
-
-    return (
-      <div className="container py-10">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold">Medewerker Dashboard</h1>
-          <LogoutButton />
-        </div>
-        <p className="mb-4">Ingelogd als {user.name} ({user.email}) — rol: {role}</p>
-
-        <div className="grid md:grid-cols-3 gap-4 mb-8">
-          <div className="border rounded p-4">
-            <h3 className="font-semibold">Leden</h3>
-            <p className="text-2xl">{ledenRes.totalDocs}</p>
-            <a href="/admin/collections/leden" className="text-sm underline">Beheren in admin</a>
-          </div>
-          <div className="border rounded p-4">
-            <h3 className="font-semibold">Inschrijvingen</h3>
-            <p className="text-2xl">{inschrijvingenRes.totalDocs}</p>
-          </div>
-          <div className="border rounded p-4">
-            <h3 className="font-semibold">Coach Afspraken</h3>
-            <p className="text-2xl">{afsprakenRes.totalDocs}</p>
-          </div>
-        </div>
-
-        <div className="grid md:grid-cols-2 gap-6">
-          <div>
-            <h2 className="text-xl font-semibold mb-2">Recente leden</h2>
-            <div className="border rounded divide-y">
-              {ledenRes.docs.slice(0, 5).map((l: any) => (
-                <div key={l.id} className="p-3 flex justify-between">
-                  <span>{l.naam} — {l.email}</span>
-                  <span className="text-xs bg-muted px-2 py-1 rounded">{l.status}</span>
-                </div>
-              ))}
-            </div>
-            <Link href="/medewerker" className="text-sm underline mt-2 inline-block">→ Uitgebreid beheer</Link>
-          </div>
-          <div>
-            <h2 className="text-xl font-semibold mb-2">Recente toegangspogingen</h2>
-            <div className="border rounded divide-y">
-              {toegangRes.docs.map((t: any) => (
-                <div key={t.id} className="p-3 text-sm flex justify-between">
-                  <span>Lid {typeof t.lid === 'object' ? t.lid.naam : t.lid} — {new Date(t.datumTijd).toLocaleString()}</span>
-                  <span className={t.resultaat === 'Toegestaan' ? 'text-green-600' : 'text-red-600'}>{t.resultaat}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-8 border p-4 rounded">
-          <h3 className="font-semibold mb-2">Snel acties</h3>
-          <div className="flex gap-2 flex-wrap">
-            <Link href="/admin/collections/leden?create" className="border px-3 py-2 rounded text-sm">+ Lid aanmaken</Link>
-            <Link href="/admin/collections/abonnementen" className="border px-3 py-2 rounded text-sm">Abonnementen beheren</Link>
-            <Link href="/admin/collections/cursussen" className="border px-3 py-2 rounded text-sm">Cursussen beheren</Link>
-            <Link href="/cursussen" className="border px-3 py-2 rounded text-sm">Bekijk cursussen (als lid)</Link>
-          </div>
-        </div>
-      </div>
-    )
+    return <PortalShell name={user.name} staff><PageHeading eyebrow="ACHTER DE BALIE" title={`Welkom, ${user.name.split(' ')[0]}.`} description="Een frisse blik op wat er speelt bij De Kast." action={<Link href="/medewerker" className="button button-dark button-small">Leden beheren<ArrowUpRight size={16}/></Link>}/><div className="stat-grid">{[{label:'Leden',count:members.totalDocs,icon:Users},{label:'Cursusinschrijvingen',count:courses.totalDocs,icon:CalendarDays},{label:'Coachafspraken',count:coaches.totalDocs,icon:Activity}].map(({label,count,icon:Icon})=><div className="stat-card" key={label}><span>{label}<Icon size={18}/></span><strong>{count}</strong></div>)}</div><div className="dashboard-grid"><section className="content-panel"><div className="panel-top"><h2>Nieuwe gezichten</h2><Link href="/medewerker" className="text-link">Alle leden<ArrowUpRight size={14}/></Link></div>{members.docs.length?members.docs.map(member=><div className="booking-row" key={member.id}><span className="avatar">{member.naam[0]}</span><div className="booking-detail"><strong>{member.naam}</strong><p>{member.email}</p></div><StatusPill value={member.status}/></div>):<EmptyState title="Nog geen leden" description="Voeg het eerste lid toe via ledenbeheer."/>}</section><section className="content-panel"><div className="panel-top"><h2>Recente check-ins</h2><Activity size={18}/></div>{visits.docs.length?visits.docs.map(visit=><div className="booking-row" key={visit.id}><div className="booking-detail"><strong>{typeof visit.lid==='object'?visit.lid.naam:'Lid'}</strong><p>{dateLabel(visit.datumTijd)} · {timeLabel(visit.datumTijd)}<br/>{visit.reden}</p></div><StatusPill value={visit.resultaat}/></div>):<EmptyState title="Nog even rustig" description="Nieuwe toegangspogingen verschijnen hier."/>}</section></div></PortalShell>
   }
-
-  // Lid / coach dashboard
-  if (!lid) {
-    return (
-      <div className="container py-10">
-        <h1 className="text-2xl font-bold">Geen lid profiel gekoppeld</h1>
-        <p>Neem contact op met receptie.</p>
-        <LogoutButton />
-      </div>
-    )
-  }
-
-  const payload = await getPayload({ config })
-  const lidId = lid.id
-  const [inschrijvingen, afspraken, toegang] = await Promise.all([
-    payload.find({ collection: 'cursus-inschrijvingen', where: { lid: { equals: lidId } }, depth: 2, limit: 20, sort: '-createdAt', overrideAccess: true }),
-    payload.find({ collection: 'coach-afspraken', where: { lid: { equals: lidId } }, depth: 2, limit: 20, sort: '-createdAt', overrideAccess: true }),
-    payload.find({ collection: 'toegangspogingen', where: { lid: { equals: lidId } }, depth: 1, limit: 10, sort: '-createdAt', overrideAccess: true }),
+  if(!lid)return <PortalShell name={user.name}><PageHeading eyebrow="MIJN DE KAST" title="Welkom bij De Kast." description="Je account is aangemaakt."/><section className="content-panel"><EmptyState title="Je profiel is nog niet gekoppeld" description="Vraag de balie om je ledenprofiel te koppelen. Daarna vind je hier je abonnement en boekingen."/></section></PortalShell>
+  const [courses,appointments,visits]=await Promise.all([
+    payload.find({collection:'cursus-inschrijvingen',where:{lid:{equals:lid.id}},sort:'-createdAt',limit:20,depth:1,user,overrideAccess:false}),
+    payload.find({collection:'coach-afspraken',where:{lid:{equals:lid.id}},sort:'-createdAt',limit:20,depth:1,user,overrideAccess:false}),
+    payload.find({collection:'toegangspogingen',where:{lid:{equals:lid.id}},sort:'-createdAt',limit:5,depth:0,user,overrideAccess:false}),
   ])
-
-  const max = abonnement ? getMaxForType(abonnement.type) : 0
-  const gebruikt = abonnement?.bezoekenDezeWeek ?? 0
-  const resterend = max === Infinity ? '∞' : Math.max(0, max - gebruikt)
-  const heeftAddendum = abonnement?.heeftCursusAddendum
-
-  return (
-    <div className="container py-10">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">Welkom, {lid.naam}</h1>
-        <LogoutButton />
-      </div>
-
-      {/* Credits kaart */}
-      <div className="grid md:grid-cols-3 gap-4 mb-8">
-        <div className="border rounded-lg p-6 bg-black text-white">
-          <h3 className="text-sm opacity-70">Abonnement</h3>
-          <p className="text-xl font-bold">{abonnement?.type || 'Geen'}</p>
-          <p className="text-sm opacity-70">Status: {abonnement?.status}</p>
-        </div>
-        <div className="border rounded-lg p-6">
-          <h3 className="text-sm text-muted-foreground">Credits deze week</h3>
-          <p className="text-3xl font-bold">{gebruikt} / {max === Infinity ? '∞' : max}</p>
-          <p className="text-sm">Resterend: {resterend}</p>
-          <div className="w-full bg-muted h-2 rounded mt-2">
-            <div className="bg-black h-2 rounded" style={{ width: max === Infinity ? '100%' : `${Math.min(100, (gebruikt / max) * 100)}%` }} />
-          </div>
-        </div>
-        <div className="border rounded-lg p-6">
-          <h3 className="text-sm text-muted-foreground">Cursus toegang</h3>
-          <p className="text-xl font-bold">{heeftAddendum ? '✅ Ja' : '❌ Nee'}</p>
-          <p className="text-xs">{heeftAddendum ? 'Je mag cursussen boeken' : 'Upgrade voor cursussen'}</p>
-        </div>
-      </div>
-
-      <div className="flex gap-4 mb-8 flex-wrap">
-        <CheckinButton lidId={lidId} />
-        <Link href="/cursussen" className="border px-4 py-2 rounded">Cursussen boeken</Link>
-        <Link href="/coaches" className="border px-4 py-2 rounded">Coach afspraak</Link>
-      </div>
-
-      <div className="grid md:grid-cols-2 gap-8">
-        <div>
-          <h2 className="text-xl font-semibold mb-3">Mijn cursussen</h2>
-          {inschrijvingen.docs.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Nog geen inschrijvingen.</p>
-          ) : (
-            <div className="space-y-2">
-              {inschrijvingen.docs.map((i: any) => (
-                <div key={i.id} className="border rounded p-3 flex justify-between items-center">
-                  <div>
-                    <p className="font-medium">{typeof i.cursus === 'object' ? i.cursus.naam : i.cursus}</p>
-                    <p className="text-xs">{new Date(i.moment).toLocaleString()} — {i.status}</p>
-                  </div>
-                  <CancelInschrijvingButton id={i.id} />
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-        <div>
-          <h2 className="text-xl font-semibold mb-3">Mijn coach afspraken</h2>
-          {afspraken.docs.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Nog geen afspraken.</p>
-          ) : (
-            <div className="space-y-2">
-              {afspraken.docs.map((a: any) => (
-                <div key={a.id} className="border rounded p-3 flex justify-between items-center">
-                  <div>
-                    <p className="font-medium">{typeof a.coach === 'object' ? a.coach.naam : a.coach} — {typeof a.coach === 'object' ? a.coach.specialisatie : ''}</p>
-                    <p className="text-xs">{new Date(a.datumTijd).toLocaleString()} — {a.status}</p>
-                  </div>
-                  <CancelAfspraakButton id={a.id} />
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-
-      <div className="mt-8">
-        <h3 className="font-semibold mb-2">Recente toegang</h3>
-        <div className="border rounded divide-y">
-          {toegang.docs.map((t: any) => (
-            <div key={t.id} className="p-2 text-sm flex justify-between">
-              <span>{new Date(t.datumTijd).toLocaleString()}</span>
-              <span className={t.resultaat === 'Toegestaan' ? 'text-green-600' : 'text-red-600'}>{t.resultaat} — {t.reden}</span>
-            </div>
-          ))}
-          {toegang.docs.length === 0 && <p className="p-3 text-sm text-muted-foreground">Geen toegangspogingen</p>}
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function CancelInschrijvingButton({ id }: { id: number }) {
-  return (
-    <form
-      action={async () => {
-        'use server'
-        const { getPayload } = await import('payload')
-        const config = (await import('@payload-config')).default
-        const payload = await getPayload({ config })
-        await payload.update({ collection: 'cursus-inschrijvingen', id, data: { status: 'Geannuleerd' }, overrideAccess: true })
-      }}
-    >
-      <button className="text-xs border px-2 py-1 rounded">Annuleren</button>
-    </form>
-  )
-}
-function CancelAfspraakButton({ id }: { id: number }) {
-  return (
-    <form
-      action={async () => {
-        'use server'
-        const { getPayload } = await import('payload')
-        const config = (await import('@payload-config')).default
-        const payload = await getPayload({ config })
-        await payload.update({ collection: 'coach-afspraken', id, data: { status: 'Geannuleerd' }, overrideAccess: true })
-      }}
-    >
-      <button className="text-xs border px-2 py-1 rounded">Annuleren</button>
-    </form>
-  )
+  const limit=visitLimit(subscription?.type),used=subscription?.bezoekenDezeWeek||0
+  const progress=limit===Infinity?0:limit>0?Math.min(100,Math.max(0,(used/limit)*100)):0
+  const bookings=[...courses.docs.map(c=>({id:c.id,title:typeof c.cursus==='object'?c.cursus.naam:'Cursus',date:c.moment,status:c.status,kind:'Cursus',collection:'cursus-inschrijvingen' as const})),...appointments.docs.map(a=>({id:a.id,title:typeof a.coach==='object'?a.coach.naam:'Coachafspraak',date:a.datumTijd,status:a.status,kind:'Persoonlijke coaching',collection:'coach-afspraken' as const}))].sort((a,b)=>new Date(b.date).getTime()-new Date(a.date).getTime())
+  return <PortalShell name={user.name}><PageHeading eyebrow="EEN NIEUWE DAG. JOUW MOMENT." title={`Welkom terug, ${lid.naam.split(' ')[0]}.`} description="Alles voor je volgende training, op één plek." action={<span className="date-badge"><CalendarDays size={14}/>{dateLabel(new Date().toISOString())}</span>}/>
+    <div className="dashboard-grid"><section className="welcome-card"><p className="eyebrow">KLAAR VOOR EEN NIEUWE STAP?</p><h2>Een beetje beweging.<br/>Een heleboel energie.</h2><p>Ben je bij De Kast? Check in en maak er jouw moment van.</p><CheckinButton lidId={lid.id}/></section><section className="membership-summary"><div className="panel-top"><h2>Jouw abonnement</h2><Dumbbell size={20}/></div><div className="membership-name">{membershipLabel(subscription?.type)}</div><StatusPill value={subscription?.status||'Niet gekoppeld'}/><div className="membership-meta"><span>Geregistreerde bezoeken</span><strong>{used} / {limit===Infinity?'∞':limit}</strong></div>{limit!==Infinity&&<div className="progress-track" role="progressbar" aria-label="Gebruikte bezoeken" aria-valuenow={Math.min(used,limit)} aria-valuemin={0} aria-valuemax={limit||1}><span style={{width:`${progress}%`}}/></div>}<p className="catalog-subtitle" style={{marginTop:12,marginBottom:0}}>{limit===Infinity?'Alle ruimte om te bewegen.':`${Math.max(0,limit-used)} bezoeken over volgens je huidige teller.`}</p></section></div>
+    <div className="quick-actions"><Link href="/cursussen" className="quick-action"><CalendarDays/><span><strong>Vind je volgende cursus</strong><small>Samen meer energie</small></span><ArrowUpRight size={17}/></Link><Link href="/coaches" className="quick-action"><Users/><span><strong>Plan je coachmoment</strong><small>Aandacht voor jouw doelen</small></span><ArrowUpRight size={17}/></Link><a href="#mijn-boekingen" className="quick-action"><Clock3/><span><strong>Bekijk je boekingen</strong><small>Jouw sportmomenten</small></span><ArrowUpRight size={17}/></a></div>
+    <div className="dashboard-grid"><section className="content-panel" id="mijn-boekingen"><div className="panel-top"><h2>Jouw sportmomenten</h2><span className="status-pill status-positive">{bookings.length} boekingen</span></div>{bookings.length?bookings.map(booking=><div className="booking-row" key={booking.collection+booking.id}><div className="booking-date">{new Intl.DateTimeFormat('nl-NL',{day:'numeric',timeZone:'Europe/Amsterdam'}).format(new Date(booking.date))}<small>{new Intl.DateTimeFormat('nl-NL',{month:'short',timeZone:'Europe/Amsterdam'}).format(new Date(booking.date))}</small></div><div className="booking-detail"><strong>{booking.title}</strong><p>{booking.kind} · {timeLabel(booking.date)}<br/>{dateLabel(booking.date)}</p></div><div className="booking-actions"><StatusPill value={booking.status}/>{booking.status==='Bevestigd'&&<CancelBookingButton id={booking.id} collection={booking.collection}/>}</div></div>):<EmptyState title="Je agenda heeft nog ruimte" description="Boek een cursus of coachafspraak. Je vindt je sportmomenten hier terug."/>}</section><div><section className="content-panel"><div className="panel-top"><h2>Je laatste bezoeken</h2><Activity size={18}/></div>{visits.docs.length?visits.docs.map(visit=><div className="booking-row" key={visit.id}><div className="booking-detail"><strong>{dateLabel(visit.datumTijd)} · {timeLabel(visit.datumTijd)}</strong><p>{visit.reden}</p></div><StatusPill value={visit.resultaat}/></div>):<EmptyState title="Je eerste bezoek wacht" description="Na het inchecken zie je hier je uitslag en eerdere bezoeken."/>}</section><div className="notice"><Dumbbell size={18}/><span>{subscription?.heeftCursusAddendum?'Jouw abonnement heeft cursusrecht. Ontdek het aanbod en probeer iets nieuws.':'Toe aan iets nieuws? Vraag de balie naar cursusrecht bij je abonnement.'}</span></div></div></div>
+  </PortalShell>
 }

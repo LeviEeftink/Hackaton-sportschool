@@ -2,49 +2,16 @@ import { getCurrentUserWithLid } from '@/utilities/getCurrentUser'
 import { getPayload } from 'payload'
 import config from '@payload-config'
 import { redirect } from 'next/navigation'
+import type { User, Abonnementen, Leden } from '@/payload-types'
+import { Dumbbell, Info, CalendarDays } from 'lucide-react'
+import { PortalShell, PageHeading, EmptyState, StatusPill } from '@/components/kast/PortalShell'
+import { dateLabel, timeLabel } from '@/components/kast/format'
 import BoekCursusButton from './BoekButton'
-
-export default async function CursussenPage() {
-  const data = await getCurrentUserWithLid()
-  if (!data?.user) redirect('/login')
-
-  const payload = await getPayload({ config })
-  const cursussen = await payload.find({ collection: 'cursussen', limit: 100, depth: 1, overrideAccess: true })
-
-  const lidId = data.lid?.id
-  const abonnement = data.abonnement
-  const heeftAddendum = abonnement?.heeftCursusAddendum
-  const status = abonnement?.status
-
-  return (
-    <div className="container py-10">
-      <h1 className="text-3xl font-bold mb-2">Cursussen</h1>
-      <p className="mb-6 text-muted-foreground">
-        {heeftAddendum ? 'Je hebt cursus addendum — je kunt boeken.' : '⚠️ Je hebt geen cursus addendum — boekingen zullen falen. Vraag medewerker om upgrade.'}
-        {status !== 'Actief' && <span className="text-red-600"> Abonnement niet actief!</span>}
-      </p>
-
-      <div className="grid md:grid-cols-2 gap-6">
-        {cursussen.docs.map((c: any) => (
-          <div key={c.id} className="border rounded-lg p-5">
-            <h3 className="font-bold text-lg">{c.naam}</h3>
-            <p className="text-sm text-muted-foreground mb-3">Status: {c.status} — {c.beschikbareMomenten?.length || 0} momenten</p>
-            <div className="space-y-2">
-              {(c.beschikbareMomenten || []).map((m: any, idx: number) => (
-                <div key={idx} className="flex justify-between items-center border rounded px-3 py-2">
-                  <span className="text-sm">{new Date(m.moment).toLocaleString()}</span>
-                  {lidId ? (
-                    <BoekCursusButton lidId={lidId} cursusId={c.id} moment={m.moment} disabled={!heeftAddendum} />
-                  ) : (
-                    <span className="text-xs">Geen lid</span>
-                  )}
-                </div>
-              ))}
-              {(!c.beschikbareMomenten || c.beschikbareMomenten.length === 0) && <p className="text-sm text-muted-foreground">Geen momenten beschikbaar</p>}
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  )
+export const metadata={title:'Cursussen'}
+export default async function CursussenPage(){
+  const data=await getCurrentUserWithLid();if(!data?.user)redirect('/login')
+  const user=data.user as User,lid=data.lid as Leden|null,subscription=data.abonnement as Abonnementen|null,payload=await getPayload({config})
+  const courses=await payload.find({collection:'cursussen',where:{status:{equals:'Actief'}},limit:100,depth:0,user,overrideAccess:false})
+  const canBook=Boolean(lid&&lid.status==='Actief'&&subscription?.status==='Actief'&&subscription.heeftCursusAddendum)
+  return <PortalShell name={user.name} staff={user.role==='admin'||user.role==='medewerker'}><PageHeading eyebrow="SAMEN KOM JE VERDER" title="Vind jouw energie." description="Kies een cursus en maak ruimte voor een nieuw sportmoment."/><div className="notice"><Info size={17}/><span>{canBook?'Je hebt cursusrecht. Kies hieronder een beschikbaar moment om mee te doen.':'Om een cursus te boeken heb je een actief lidmaatschap met cursusrecht nodig. De balie helpt je graag.'}</span></div>{courses.docs.length?<div className="catalog-grid">{courses.docs.map((course,index)=>{const moments=(course.beschikbareMomenten||[]).filter(m=>new Date(m.moment).getTime()>Date.now()).sort((a,b)=>new Date(a.moment).getTime()-new Date(b.moment).getTime());return <article className="catalog-card" key={course.id}><div className="catalog-art"><span>{String(index+1).padStart(2,'0')} / SAMEN IN BEWEGING</span><Dumbbell size={65} strokeWidth={1}/></div><div className="catalog-content"><div className="catalog-title"><h2>{course.naam}</h2><StatusPill value={course.status}/></div><p className="catalog-subtitle">{moments.length} toekomstige {moments.length===1?'moment':'momenten'} · Tijden in Nederland</p>{moments.length?moments.map(m=><div className="session-row" key={m.id||m.moment}><span>{dateLabel(m.moment)}<small>{timeLabel(m.moment)}</small></span>{lid?<BoekCursusButton lidId={lid.id} cursusId={course.id} moment={m.moment} disabled={!canBook}/>:<CalendarDays size={18}/>}</div>):<EmptyState title="Nieuwe momenten volgen" description="Er staan nog geen toekomstige momenten gepland voor deze cursus."/>}</div></article>})}</div>:<section className="content-panel"><EmptyState title="Het aanbod krijgt vorm" description="Er zijn momenteel geen actieve cursussen. Kijk later nog eens of informeer bij de balie."/></section>}</PortalShell>
 }

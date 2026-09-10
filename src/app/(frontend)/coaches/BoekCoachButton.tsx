@@ -1,50 +1,10 @@
 'use client'
 import { useState } from 'react'
-
-export default function BoekCoachButton({ lidId, coachId }: { lidId: number; coachId: number }) {
-  const [datumTijd, setDatumTijd] = useState('')
-  const [msg, setMsg] = useState('')
-  const [loading, setLoading] = useState(false)
-
-  // Default to tomorrow 10:00
-  const tomorrow = new Date(Date.now() + 86400000)
-  tomorrow.setHours(10, 0, 0, 0)
-  const defaultVal = tomorrow.toISOString().slice(0, 16)
-
-  async function boek() {
-    if (!datumTijd) return setMsg('Kies datum/tijd')
-    setLoading(true)
-    setMsg('')
-    try {
-      const iso = new Date(datumTijd).toISOString()
-      const res = await fetch('/api/coach-afspraken', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ lid: lidId, coach: coachId, datumTijd: iso, status: 'Bevestigd' }),
-      })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.errors?.[0]?.message || data.message || 'Boeken mislukt')
-      setMsg('✅ Afspraak geboekt!')
-    } catch (e: any) {
-      setMsg('❌ ' + e.message)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  return (
-    <div className="space-y-2">
-      <input
-        type="datetime-local"
-        className="w-full border rounded px-2 py-1 text-sm"
-        defaultValue={defaultVal}
-        onChange={(e) => setDatumTijd(e.target.value)}
-      />
-      <button onClick={boek} disabled={loading} className="w-full text-xs border px-3 py-2 rounded bg-black text-white disabled:opacity-50">
-        {loading ? 'Boeken...' : 'Afspraak plannen'}
-      </button>
-      {msg && <p className="text-xs">{msg}</p>}
-    </div>
-  )
+import { useRouter } from 'next/navigation'
+import { ArrowUpRight } from 'lucide-react'
+export default function BoekCoachButton({lidId,coachId,disabled}:{lidId:number;coachId:number;disabled?:boolean}) {
+  const [date,setDate]=useState(''),[message,setMessage]=useState(''),[busy,setBusy]=useState(false),[failed,setFailed]=useState(false),[booked,setBooked]=useState(false)
+  const router=useRouter()
+  async function book(e:React.FormEvent){e.preventDefault();setBusy(true);setMessage('');try{if(new Date(date).getTime()<=Date.now())throw new Error('Kies een moment in de toekomst.');const res=await fetch('/api/coach-afspraken',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({lid:lidId,coach:coachId,datumTijd:new Date(date).toISOString(),status:'Bevestigd'})});const data=await res.json();if(!res.ok)throw new Error(data.errors?.[0]?.message||'Dit moment kan niet worden geboekt.');setFailed(false);setBooked(true);setMessage('Je afspraak staat in je overzicht.');router.refresh()}catch(err){setFailed(true);setMessage(err instanceof Error?err.message:'Geen verbinding. Probeer opnieuw.')}finally{setBusy(false)}}
+  return <form onSubmit={book} className="coach-booking"><div className="field"><label htmlFor={`coach-date-${coachId}`}>Kies je datum en tijd</label><input id={`coach-date-${coachId}`} type="datetime-local" required value={date} onChange={e=>{setDate(e.target.value);setBooked(false)}} disabled={disabled}/><small>Vul het tijdstip in volgens de tijdzone van je apparaat.</small></div><button className="button button-dark" disabled={busy||disabled||booked}>{booked?'Afspraak geboekt':busy?'Afspraak plannen...':'Plan een afspraak'}<ArrowUpRight size={16}/></button>{message&&<p className={`feedback ${failed?'feedback-error':''}`} role={failed?'alert':'status'}>{message}</p>}</form>
 }

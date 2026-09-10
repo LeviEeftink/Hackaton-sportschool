@@ -61,4 +61,4 @@ Collectionwijzigingen worden samen met types en eventuele migraties beoordeeld. 
 
 ## Ontwerpbestanden
 
-De PlantUML-bronnen en diagrammen staan in `docs/fase-1` op `development`. Word-documenten en renderbestanden blijven lokaal; deze GitHub-documentatie bevat de samenvatting en verwijzingen naar Linear.
+De PlantUML-bronnen en diagrammen staan in `docs/fase-1` op `development`. Op `feature` staan ook de Word-documenten in de repositoryroot en de bijbehorende generatorscripts in `docs/fase-1`. Tijdelijke renderbestanden blijven lokaal.
