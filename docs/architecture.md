@@ -1,6 +1,6 @@
 # Architectuur
 
-De Kast gebruikt één Next.js-applicatie met een geïntegreerde Payload-backend. De actieve domeincode staat op `develop`.
+De Kast gebruikt één Next.js-applicatie met een geïntegreerde Payload-backend. De actieve domeincode staat op `development`.
 
 ```mermaid
 flowchart LR
@@ -61,4 +61,4 @@ Collectionwijzigingen worden samen met types en eventuele migraties beoordeeld. 
 
 ## Ontwerpbestanden
 
-De PlantUML-bronnen en diagrammen staan in `docs/fase-1` op `develop`. Word-documenten en renderbestanden blijven lokaal; deze GitHub-documentatie bevat de samenvatting en verwijzingen naar Linear.
+De PlantUML-bronnen en diagrammen staan in `docs/fase-1` op `development`. Word-documenten en renderbestanden blijven lokaal; deze GitHub-documentatie bevat de samenvatting en verwijzingen naar Linear.

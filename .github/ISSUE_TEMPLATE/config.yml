@@ -2,4 +2,4 @@ blank_issues_enabled: false
 contact_links:
   - name: User stories en taken in Linear
     url: https://linear.app/hackaton1levieeftink/project/sportschool-de-kast-98c7ce048137
-    about: Maak taken in Linear aan; koppel het HAC-ID aan je branch en pull request.
+    about: Maak taken in Linear aan; koppel het HAC-ID aan je commit of pull request.
