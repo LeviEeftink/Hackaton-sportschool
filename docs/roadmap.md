@@ -25,7 +25,7 @@ US-10 en US-12: medewerkers beheren leden en aanbod. Daarna volgen testbewijs, d
 ## Technische nulmeting — 8 september 2026
 
 - TypeScript faalt door onder meer verwijzingen naar verwijderde templatecollecties en ontbrekende gegenereerde types.
-- De bestaande `next.config.ts` op `develop` gebruikt `ignoreBuildErrors: true`. Een geslaagde build bewijst daardoor niet dat TypeScript slaagt.
+- De bestaande `next.config.ts` op `development` gebruikt `ignoreBuildErrors: true`. Een geslaagde build bewijst daardoor niet dat TypeScript slaagt.
 - ESLint is omgezet naar de native flat config van de geïnstalleerde Next.js-versie. De lintuitkomst van de app blijft apart te beoordelen.
 - De frontendtest verwacht nog de Payload Website Template; de integratietest controleert alleen of users opvraagbaar zijn.
 - Volledige acceptatiedekking ontbreekt. Zie **HAC-35**.

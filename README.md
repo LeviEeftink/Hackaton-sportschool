@@ -21,7 +21,7 @@
 
 Een webapplicatie waarmee leden hun abonnement bekijken, inchecken en cursussen of coachafspraken boeken. Medewerkers krijgen één plek voor ledenbeheer, het sportaanbod en toegangspogingen.
 
-Gebouwd als hackathon- en onderwijsproject met **Next.js, Payload CMS en SQLite**. De actieve sportschoolversie staat op [develop](https://github.com/LeviEeftink/Hackaton-sportschool/tree/develop). De branch `main` bevat de repositorybasis; het prototype wordt pas na acceptatie samengevoegd. Het project is nog niet gereed voor productie.
+Gebouwd als hackathon- en onderwijsproject met **Next.js, Payload CMS en SQLite**. De actieve sportschoolversie staat op [development](https://github.com/LeviEeftink/Hackaton-sportschool/tree/development). De branch `main` bevat de repositorybasis; het prototype wordt pas na acceptatie samengevoegd. Het project is nog niet gereed voor productie.
 
 ## Wat zit erin?
 
@@ -42,7 +42,7 @@ Gebruik **Node.js 24** en **npm**. `package-lock.json` is het lockbestand voor i
 ```sh
 git clone https://github.com/LeviEeftink/Hackaton-sportschool.git
 cd Hackaton-sportschool
-git switch develop
+git switch development
 npm ci
 ```
 
@@ -69,7 +69,7 @@ Open [localhost:3000](http://localhost:3000). SQLite gebruikt `DATABASE_URL=file
 
 Maak het eerste account via `/admin` en controleer de rol in je lokale prototype. De huidige standaardrol is `lid`; de beheerinitialisatie moet nog worden aangescherpt bij HAC-24. Leg actieve abonnementen, cursussen en coaches vast om de ledenflows te proberen. De seedfunctie wist gegevens en is uitsluitend bedoeld voor een wegwerpdatabase.
 
-### Pagina's op develop
+### Pagina's op development
 
 | Route         | Doel                                    |
 | ------------- | --------------------------------------- |
@@ -106,7 +106,7 @@ De [Linear-planning](https://linear.app/hackaton1levieeftink/project/sportschool
 | **02 · Boeken en annuleren**  | Geldige cursus- en coachboekingen met eigendomscontrole       |
 | **03 · Beheer en oplevering** | Medewerkerbeheer, acceptatietests en een reproduceerbare demo |
 
-Werk vanuit `develop` op één korte branch per taak, bijvoorbeeld `fix/hac-24-rollen-en-profielen`. Open daarna een pull request terug naar `develop`. Lees de [branchafspraken](CONTRIBUTING.md).
+We gebruiken drie branches: `feature` voor nieuw werk, `development` om wijzigingen samen te testen en `main` voor geaccepteerde opleveringen. De volgorde is `feature` → `development` → `main`, via pull requests. Lees de [branchafspraken](CONTRIBUTING.md).
 
 ## Projectstructuur
 
@@ -123,7 +123,7 @@ tests/                 Vitest en Playwright
 .github/               Workflows en pull-requesttemplate
 ```
 
-De oorspronkelijke Pages-, Posts- en Search-template is nog deels aanwezig. De actieve Payload-configuratie op `develop` gebruikt de sportschoolcollecties. Het opruimen van templateverwijzingen is nodig om de TypeScript-controle te laten slagen.
+De oorspronkelijke Pages-, Posts- en Search-template is nog deels aanwezig. De actieve Payload-configuratie op `development` gebruikt de sportschoolcollecties. Het opruimen van templateverwijzingen is nodig om de TypeScript-controle te laten slagen.
 
 ## Herkomst
 
