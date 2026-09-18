@@ -1,8 +1,4 @@
 <p align="center">
-  <img src="docs/assets/de-kast-banner.svg" alt="Sportschool De Kast — jouw sportzaken, op één plek" width="100%" />
-</p>
-
-<p align="center">
   <a href="https://github.com/LeviEeftink/Hackaton-sportschool/actions/workflows/repository.yml"><img src="https://github.com/LeviEeftink/Hackaton-sportschool/actions/workflows/repository.yml/badge.svg?branch=main" alt="Repository checks" /></a>
   <img src="https://img.shields.io/badge/Next.js-16.3-172A23?style=flat-square" alt="Next.js 16.3" />
   <img src="https://img.shields.io/badge/Payload-3.88-172A23?style=flat-square" alt="Payload 3.88" />
